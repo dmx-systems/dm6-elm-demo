@@ -9755,12 +9755,8 @@ var $NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$custom = $elm$json$J
 var $NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$hardcoded = A2($elm$core$Basics$composeR, $elm$json$Json$Decode$succeed, $NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$custom);
 var $author$project$Feature$Icon$Closed = { $: "Closed" };
 var $author$project$Feature$Icon$init = { picker: $author$project$Feature$Icon$Closed };
-var $author$project$Feature$Mouse$NoDrag = function(a) {
-  return { $: "NoDrag", a };
-};
-var $author$project$Feature$Mouse$init = {
-  dragState: $author$project$Feature$Mouse$NoDrag($elm$core$Maybe$Nothing)
-};
+var $author$project$Feature$Mouse$NoDrag = { $: "NoDrag" };
+var $author$project$Feature$Mouse$init = { dragState: $author$project$Feature$Mouse$NoDrag, hover: $elm$core$Maybe$Nothing };
 var $author$project$Feature$Search$NoSearch = { $: "NoSearch" };
 var $author$project$Feature$Search$init = { result: $author$project$Feature$Search$NoSearch, term: "" };
 var $author$project$Feature$Sel$init = { items: _List_Nil };
@@ -11064,8 +11060,8 @@ var $author$project$Box$updateTopicProps_ = F4(
     );
   }
 );
-var $author$project$Box$setTopicPosByDelta = F4(
-  function(topicId, boxId, delta, model2) {
+var $author$project$Box$updateTopicPos = F4(
+  function(topicId, boxId, transform, model2) {
     return A4(
       $author$project$Box$updateTopicProps_,
       topicId,
@@ -11074,7 +11070,7 @@ var $author$project$Box$setTopicPosByDelta = F4(
         return _Utils_update(
           props,
           {
-            pos: A2($author$project$ModelParts$Point, props.pos.x + delta.x, props.pos.y + delta.y)
+            pos: transform(props.pos)
           }
         );
       },
@@ -11085,10 +11081,12 @@ var $author$project$Box$setTopicPosByDelta = F4(
 var $author$project$Box$Size$adjustBoxPos = F5(
   function(boxId, parentBoxId, newRect, oldRect, model2) {
     return A4(
-      $author$project$Box$setTopicPosByDelta,
+      $author$project$Box$updateTopicPos,
       boxId,
       parentBoxId,
-      A2($author$project$ModelParts$Point, newRect.x1 - oldRect.x1, newRect.y1 - oldRect.y1),
+      function(oldPos) {
+        return A2($author$project$ModelParts$Point, oldPos.x + newRect.x1 - oldRect.x1, oldPos.y + newRect.y1 - oldRect.y1);
+      },
       model2
     );
   }
@@ -12282,82 +12280,6 @@ var $author$project$Utils$command = function(msg) {
     $elm$core$Task$succeed(_Utils_Tuple0)
   );
 };
-var $author$project$Feature$Mouse$DraftAssoc = { $: "DraftAssoc" };
-var $author$project$Feature$Mouse$Drag = F6(
-  function(a, b, c, d, e, f) {
-    return { $: "Drag", a, b, c, d, e, f };
-  }
-);
-var $author$project$Box$hasDeepItem = F3(
-  function(boxId, itemId, model2) {
-    if (_Utils_eq(itemId, boxId)) {
-      return true;
-    } else {
-      var _v0 = A2($author$project$Box$byId, boxId, model2);
-      if (_v0.$ === "Just") {
-        var box = _v0.a;
-        return A2(
-          $elm$core$List$any,
-          function(id) {
-            return A3($author$project$Box$hasDeepItem, id, itemId, model2);
-          },
-          $elm$core$Dict$keys(box.items)
-        );
-      } else {
-        return false;
-      }
-    }
-  }
-);
-var $author$project$Feature$MouseAPI$setDragState = F2(
-  function(dragState, model2) {
-    var mouse = model2.mouse;
-    return _Utils_update(
-      model2,
-      {
-        mouse: _Utils_update(
-          mouse,
-          { dragState }
-        )
-      }
-    );
-  }
-);
-var $author$project$Feature$MouseAPI$hover = F3(
-  function(targetId, targetPath, model2) {
-    var _v0 = model2.mouse.dragState;
-    switch (_v0.$) {
-      case "Drag":
-        var dragMode = _v0.a;
-        var id = _v0.b;
-        var boxPath = _v0.c;
-        var origPos = _v0.d;
-        var lastPos = _v0.e;
-        var isCyclic = A3($author$project$Box$hasDeepItem, id, targetId, model2);
-        var isBox = A2($author$project$Item$isBox, targetId, model2);
-        var target = isBox && !isCyclic || _Utils_eq(dragMode, $author$project$Feature$Mouse$DraftAssoc) ? $elm$core$Maybe$Just(
-          _Utils_Tuple2(targetId, targetPath)
-        ) : $elm$core$Maybe$Nothing;
-        return A2(
-          $author$project$Feature$MouseAPI$setDragState,
-          A6($author$project$Feature$Mouse$Drag, dragMode, id, boxPath, origPos, lastPos, target),
-          model2
-        );
-      case "NoDrag":
-        return A2(
-          $author$project$Feature$MouseAPI$setDragState,
-          $author$project$Feature$Mouse$NoDrag(
-            $elm$core$Maybe$Just(
-              _Utils_Tuple2(targetId, targetPath)
-            )
-          ),
-          model2
-        );
-      default:
-        return model2;
-    }
-  }
-);
 var $author$project$Model$Cancel = function(a) {
   return { $: "Cancel", a };
 };
@@ -12385,6 +12307,20 @@ var $elm$time$Time$Posix = function(a) {
 };
 var $elm$time$Time$millisToPosix = $elm$time$Time$Posix;
 var $elm$time$Time$now = _Time_now($elm$time$Time$millisToPosix);
+var $author$project$Feature$MouseAPI$setDragState = F2(
+  function(dragState, model2) {
+    var mouse = model2.mouse;
+    return _Utils_update(
+      model2,
+      {
+        mouse: _Utils_update(
+          mouse,
+          { dragState }
+        )
+      }
+    );
+  }
+);
 var $author$project$Feature$MouseAPI$mouseDownOnTopic = F4(
   function(topicId, boxPath, pos, model2) {
     return _Utils_Tuple2(
@@ -12419,6 +12355,259 @@ var $author$project$Feature$Mouse$WaitForEndTime = F4(
     return { $: "WaitForEndTime", a, b, c, d };
   }
 );
+var $author$project$Feature$Mouse$DraftAssoc = { $: "DraftAssoc" };
+var $author$project$Feature$Mouse$Drag = F6(
+  function(a, b, c, d, e, f) {
+    return { $: "Drag", a, b, c, d, e, f };
+  }
+);
+var $author$project$Box$hasDeepItem = F3(
+  function(boxId, itemId, model2) {
+    if (_Utils_eq(itemId, boxId)) {
+      return true;
+    } else {
+      var _v0 = A2($author$project$Box$byId, boxId, model2);
+      if (_v0.$ === "Just") {
+        var box = _v0.a;
+        return A2(
+          $elm$core$List$any,
+          function(id) {
+            return A3($author$project$Box$hasDeepItem, id, itemId, model2);
+          },
+          $elm$core$Dict$keys(box.items)
+        );
+      } else {
+        return false;
+      }
+    }
+  }
+);
+var $author$project$Feature$MouseAPI$setHover = F2(
+  function(hover, model2) {
+    var mouse = model2.mouse;
+    return _Utils_update(
+      model2,
+      {
+        mouse: _Utils_update(
+          mouse,
+          { hover }
+        )
+      }
+    );
+  }
+);
+var $author$project$Feature$MouseAPI$enter = F2(
+  function(_v0, model2) {
+    var targetId = _v0.a;
+    var targetPath = _v0.b;
+    var newModel = (function() {
+      var _v1 = model2.mouse.dragState;
+      if (_v1.$ === "Drag") {
+        var dragMode = _v1.a;
+        var id = _v1.b;
+        var boxPath = _v1.c;
+        var origPos = _v1.d;
+        var lastPos = _v1.e;
+        var isCyclic = A3($author$project$Box$hasDeepItem, id, targetId, model2);
+        var isBox = A2($author$project$Item$isBox, targetId, model2);
+        var target = isBox && !isCyclic || _Utils_eq(dragMode, $author$project$Feature$Mouse$DraftAssoc) ? $elm$core$Maybe$Just(
+          _Utils_Tuple2(targetId, targetPath)
+        ) : $elm$core$Maybe$Nothing;
+        return A2(
+          $author$project$Feature$MouseAPI$setDragState,
+          A6($author$project$Feature$Mouse$Drag, dragMode, id, boxPath, origPos, lastPos, target),
+          model2
+        );
+      } else {
+        return model2;
+      }
+    })();
+    return A2(
+      $author$project$Feature$MouseAPI$setHover,
+      $elm$core$Maybe$Just(
+        _Utils_Tuple2(targetId, targetPath)
+      ),
+      newModel
+    );
+  }
+);
+var $author$project$Feature$MouseAPI$leave = F2(
+  function(_v0, model2) {
+    _v0.a;
+    _v0.b;
+    var newModel = (function() {
+      var _v1 = model2.mouse.dragState;
+      if (_v1.$ === "Drag") {
+        var dragMode = _v1.a;
+        var id = _v1.b;
+        var boxPath = _v1.c;
+        var origPos = _v1.d;
+        var lastPos = _v1.e;
+        return A2(
+          $author$project$Feature$MouseAPI$setDragState,
+          A6($author$project$Feature$Mouse$Drag, dragMode, id, boxPath, origPos, lastPos, $elm$core$Maybe$Nothing),
+          model2
+        );
+      } else {
+        return model2;
+      }
+    })();
+    return A2($author$project$Feature$MouseAPI$setHover, $elm$core$Maybe$Nothing, newModel);
+  }
+);
+var $author$project$Box$Geometry$isBoxHover = F2(
+  function(box, pos) {
+    return false;
+  }
+);
+var $author$project$Config$appHeaderHeight = 36;
+var $author$project$Box$topicPos = F3(
+  function(topicId, boxId, model2) {
+    var _v0 = A3($author$project$Box$topicProps, topicId, boxId, model2);
+    if (_v0.$ === "Just") {
+      var pos = _v0.a.pos;
+      return $elm$core$Maybe$Just(pos);
+    } else {
+      return A3(
+        $author$project$Utils$fail,
+        "topicPos",
+        { boxId, topicId },
+        $elm$core$Maybe$Nothing
+      );
+    }
+  }
+);
+var $author$project$Box$Geometry$isTopicHover = F4(
+  function(topicId, boxId, pos, model2) {
+    var _v0 = _Utils_Tuple2(
+      A2($author$project$Box$byIdOrLog, boxId, model2),
+      A3($author$project$Box$topicPos, topicId, boxId, model2)
+    );
+    if (_v0.a.$ === "Just" && _v0.b.$ === "Just") {
+      var box = _v0.a.a;
+      var tp = _v0.b.a;
+      return _Utils_cmp(pos.x, tp.x - $author$project$Config$topicW2 - box.rect.x1 - $author$project$Config$topicHeight) > 0 && (_Utils_cmp(pos.x, tp.x + $author$project$Config$topicW2 - box.rect.x1) < 0 && (_Utils_cmp(pos.y - $author$project$Config$appHeaderHeight, tp.y - $author$project$Config$topicH2 - box.rect.y1) > 0 && _Utils_cmp(pos.y - $author$project$Config$appHeaderHeight, tp.y + $author$project$Config$topicH2 - box.rect.y1) < 0));
+    } else {
+      return false;
+    }
+  }
+);
+var $author$project$Box$visibleTopics = function(box) {
+  return A2(
+    $elm$core$List$filter,
+    $author$project$Box$isVisible,
+    A2(
+      $elm$core$List$filter,
+      $author$project$Box$isTopic,
+      $elm$core$Dict$values(box.items)
+    )
+  );
+};
+var $author$project$Box$Geometry$findInItems = F4(
+  function(items, boxPath, pos, model2) {
+    findInItems:
+      while (true) {
+        if (!items.b) {
+          return $elm$core$Maybe$Nothing;
+        } else {
+          var item = items.a;
+          var tailItems = items.b;
+          var _v5 = A4($author$project$Box$Geometry$findTarget, item.id, boxPath, pos, model2);
+          if (_v5.$ === "Just") {
+            var target = _v5.a;
+            return $elm$core$Maybe$Just(target);
+          } else {
+            var $temp$items = tailItems, $temp$boxPath = boxPath, $temp$pos = pos, $temp$model = model2;
+            items = $temp$items;
+            boxPath = $temp$boxPath;
+            pos = $temp$pos;
+            model2 = $temp$model;
+            continue findInItems;
+          }
+        }
+      }
+  }
+);
+var $author$project$Box$Geometry$findTarget = F4(
+  function(itemId, boxPath, pos, model2) {
+    var _v0 = A2($author$project$Box$byId, itemId, model2);
+    if (_v0.$ === "Just") {
+      var box = _v0.a;
+      var _v1 = A4(
+        $author$project$Box$Geometry$findInItems,
+        $author$project$Box$visibleTopics(box),
+        A2($elm$core$List$cons, itemId, boxPath),
+        pos,
+        model2
+      );
+      if (_v1.$ === "Just") {
+        var target = _v1.a;
+        return $elm$core$Maybe$Just(target);
+      } else {
+        var _v2 = A2($author$project$Box$Geometry$isBoxHover, box, pos);
+        if (_v2) {
+          return $elm$core$Maybe$Just(
+            _Utils_Tuple2(itemId, boxPath)
+          );
+        } else {
+          return $elm$core$Maybe$Nothing;
+        }
+      }
+    } else {
+      var _v3 = A4(
+        $author$project$Box$Geometry$isTopicHover,
+        itemId,
+        $author$project$Box$firstId(boxPath),
+        pos,
+        model2
+      );
+      if (_v3) {
+        return $elm$core$Maybe$Just(
+          _Utils_Tuple2(itemId, boxPath)
+        );
+      } else {
+        return $elm$core$Maybe$Nothing;
+      }
+    }
+  }
+);
+var $author$project$Box$Geometry$pointerTarget = F2(
+  function(pos, model2) {
+    return A4($author$project$Box$Geometry$findTarget, model2.boxId, _List_Nil, pos, model2);
+  }
+);
+var $author$project$Feature$MouseAPI$enterLeave = F2(
+  function(pos, model2) {
+    var _v0 = A2($author$project$Box$Geometry$pointerTarget, pos, model2);
+    if (_v0.$ === "Just") {
+      var target = _v0.a;
+      var _v1 = model2.mouse.hover;
+      if (_v1.$ === "Just") {
+        var oldTarget = _v1.a;
+        var _v2 = !_Utils_eq(target, oldTarget);
+        if (_v2) {
+          return A2(
+            $author$project$Feature$MouseAPI$enter,
+            target,
+            A2($author$project$Feature$MouseAPI$leave, oldTarget, model2)
+          );
+        } else {
+          return model2;
+        }
+      } else {
+        return A2($author$project$Feature$MouseAPI$enter, target, model2);
+      }
+    } else {
+      var _v3 = model2.mouse.hover;
+      if (_v3.$ === "Just") {
+        var oldTarget = _v3.a;
+        return A2($author$project$Feature$MouseAPI$leave, oldTarget, model2);
+      } else {
+        return model2;
+      }
+    }
+  }
+);
 var $author$project$Feature$MouseAPI$performDrag = F2(
   function(pos, model2) {
     var _v0 = model2.mouse.dragState;
@@ -12429,11 +12618,18 @@ var $author$project$Feature$MouseAPI$performDrag = F2(
       var origPos = _v0.d;
       var lastPos = _v0.e;
       var target = _v0.f;
-      var delta = A2($author$project$ModelParts$Point, pos.x - lastPos.x, pos.y - lastPos.y);
       var boxId = $author$project$Box$firstId(boxPath);
       var newModel = (function() {
         if (dragMode.$ === "DragTopic") {
-          return A4($author$project$Box$setTopicPosByDelta, id, boxId, delta, model2);
+          return A4(
+            $author$project$Box$updateTopicPos,
+            id,
+            boxId,
+            function(oldPos) {
+              return A2($author$project$ModelParts$Point, oldPos.x + pos.x - lastPos.x, oldPos.y + pos.y - lastPos.y);
+            },
+            model2
+          );
         } else {
           return model2;
         }
@@ -12449,7 +12645,7 @@ var $author$project$Feature$MouseAPI$performDrag = F2(
       return A3(
         $author$project$Utils$logError,
         "performDrag",
-        'Received "Move" message when dragState is ' + $author$project$Utils$toString(model2.mouse.dragState),
+        'Received "Move" when dragState is ' + $author$project$Utils$toString(model2.mouse.dragState),
         model2
       );
     }
@@ -12457,7 +12653,8 @@ var $author$project$Feature$MouseAPI$performDrag = F2(
 );
 var $author$project$Feature$MouseAPI$mouseMove = F2(
   function(pos, model2) {
-    var _v0 = model2.mouse.dragState;
+    var newModel = A2($author$project$Feature$MouseAPI$enterLeave, pos, model2);
+    var _v0 = newModel.mouse.dragState;
     switch (_v0.$) {
       case "DragEngaged":
         var time = _v0.a;
@@ -12468,7 +12665,7 @@ var $author$project$Feature$MouseAPI$mouseMove = F2(
           A2(
             $author$project$Feature$MouseAPI$setDragState,
             A4($author$project$Feature$Mouse$WaitForEndTime, time, id, boxPath, pos_),
-            model2
+            newModel
           ),
           A2(
             $elm$core$Task$perform,
@@ -12478,11 +12675,11 @@ var $author$project$Feature$MouseAPI$mouseMove = F2(
         );
       case "Drag":
         return _Utils_Tuple2(
-          A2($author$project$Feature$MouseAPI$performDrag, pos, model2),
+          A2($author$project$Feature$MouseAPI$performDrag, pos, newModel),
           $elm$core$Platform$Cmd$none
         );
       default:
-        return _Utils_Tuple2(model2, $elm$core$Platform$Cmd$none);
+        return _Utils_Tuple2(newModel, $elm$core$Platform$Cmd$none);
     }
   }
 );
@@ -12758,11 +12955,7 @@ var $author$project$Feature$MouseAPI$mouseUp = function(model2) {
     }
   })();
   return _Utils_Tuple2(
-    A2(
-      $author$project$Feature$MouseAPI$setDragState,
-      $author$project$Feature$Mouse$NoDrag($elm$core$Maybe$Nothing),
-      model2
-    ),
+    A2($author$project$Feature$MouseAPI$setDragState, $author$project$Feature$Mouse$NoDrag, model2),
     cmd
   );
 };
@@ -12773,22 +12966,6 @@ var $author$project$Feature$Mouse$DragEngaged = F4(
 );
 var $author$project$Feature$Mouse$DragTopic = { $: "DragTopic" };
 var $author$project$Config$assocDelayMillis = 200;
-var $author$project$Box$topicPos = F3(
-  function(topicId, boxId, model2) {
-    var _v0 = A3($author$project$Box$topicProps, topicId, boxId, model2);
-    if (_v0.$ === "Just") {
-      var pos = _v0.a.pos;
-      return $elm$core$Maybe$Just(pos);
-    } else {
-      return A3(
-        $author$project$Utils$fail,
-        "topicPos",
-        { boxId, topicId },
-        $elm$core$Maybe$Nothing
-      );
-    }
-  }
-);
 var $author$project$Feature$MouseAPI$timeArrived = F2(
   function(time, undoModel) {
     var present = undoModel.present;
@@ -12834,7 +13011,7 @@ var $author$project$Feature$MouseAPI$timeArrived = F2(
             var origPos = maybeOrigPos.a;
             return A6($author$project$Feature$Mouse$Drag, dragMode, id, boxPath, origPos, pos, $elm$core$Maybe$Nothing);
           } else {
-            return $author$project$Feature$Mouse$NoDrag($elm$core$Maybe$Nothing);
+            return $author$project$Feature$Mouse$NoDrag;
           }
         })();
         return A2(
@@ -12852,32 +13029,6 @@ var $author$project$Feature$MouseAPI$timeArrived = F2(
           "Received Time when dragState is not WaitFor..Time",
           _Utils_Tuple2(undoModel, $elm$core$Platform$Cmd$none)
         );
-    }
-  }
-);
-var $author$project$Feature$MouseAPI$unhover = F3(
-  function(targetId, targetPath, model2) {
-    var _v0 = model2.mouse.dragState;
-    switch (_v0.$) {
-      case "Drag":
-        var dragMode = _v0.a;
-        var id = _v0.b;
-        var boxPath = _v0.c;
-        var origPos = _v0.d;
-        var lastPos = _v0.e;
-        return A2(
-          $author$project$Feature$MouseAPI$setDragState,
-          A6($author$project$Feature$Mouse$Drag, dragMode, id, boxPath, origPos, lastPos, $elm$core$Maybe$Nothing),
-          model2
-        );
-      case "NoDrag":
-        return A2(
-          $author$project$Feature$MouseAPI$setDragState,
-          $author$project$Feature$Mouse$NoDrag($elm$core$Maybe$Nothing),
-          model2
-        );
-      default:
-        return model2;
     }
   }
 );
@@ -12909,28 +13060,6 @@ var $author$project$Feature$MouseAPI$update = F2(
           undoModel,
           $author$project$Feature$MouseAPI$mouseUp(present)
         );
-      case "Hover":
-        var id = msg.a;
-        var boxPath = msg.b;
-        return A2(
-          $author$project$Undo$swap,
-          undoModel,
-          _Utils_Tuple2(
-            A3($author$project$Feature$MouseAPI$hover, id, boxPath, present),
-            $elm$core$Platform$Cmd$none
-          )
-        );
-      case "Unhover":
-        var id = msg.a;
-        var boxPath = msg.b;
-        return A2(
-          $author$project$Undo$swap,
-          undoModel,
-          _Utils_Tuple2(
-            A3($author$project$Feature$MouseAPI$unhover, id, boxPath, present),
-            $elm$core$Platform$Cmd$none
-          )
-        );
       case "Time":
         var time = msg.a;
         return A2($author$project$Feature$MouseAPI$timeArrived, time, undoModel);
@@ -12946,9 +13075,12 @@ var $author$project$Feature$MouseAPI$update = F2(
     }
   }
 );
+var $author$project$Box$fullscreen = function(model2) {
+  return A2($author$project$Box$byIdOrLog, model2.boxId, model2);
+};
 var $elm$browser$Browser$Dom$setViewportOf = _Browser_setViewportOf;
 var $author$project$Feature$NavAPI$setViewport = function(model2) {
-  var _v0 = A2($author$project$Box$byIdOrLog, model2.boxId, model2);
+  var _v0 = $author$project$Box$fullscreen(model2);
   if (_v0.$ === "Just") {
     var box = _v0.a;
     return A2(
@@ -14616,13 +14748,7 @@ var $author$project$Main$updateScrollPos = F2(
 var $author$project$Main$update = F2(
   function(msg, undoModel) {
     var present = undoModel.present;
-    (function() {
-      if (msg.$ === "Mouse" && msg.a.$ === "Move") {
-        return msg;
-      } else {
-        return A2($author$project$Utils$info, "update", msg);
-      }
-    })();
+    A2($author$project$Utils$info, "update", msg);
     switch (msg.$) {
       case "AddAssoc":
         var player1 = msg.a;
@@ -14780,7 +14906,6 @@ var $author$project$Feature$MouseAPI$dragHandler = _List_fromArray(
     )
   ]
 );
-var $author$project$Config$appHeaderHeight = 36;
 var $author$project$Config$toolbarColor = "#e9e9ed";
 var $author$project$Main$headerStyle = _List_fromArray(
   [
@@ -37205,42 +37330,6 @@ var $author$project$Map$gAttr = F3(
     );
   }
 );
-var $author$project$Feature$Mouse$Hover = F2(
-  function(a, b) {
-    return { $: "Hover", a, b };
-  }
-);
-var $author$project$Feature$Mouse$Unhover = F2(
-  function(a, b) {
-    return { $: "Unhover", a, b };
-  }
-);
-var $author$project$Feature$MouseAPI$hoverHandler = F2(
-  function(topicId, boxPath) {
-    return _List_fromArray(
-      [
-        A2(
-          $elm$html$Html$Events$on,
-          "pointerenter",
-          $elm$json$Json$Decode$succeed(
-            $author$project$Model$Mouse(
-              A2($author$project$Feature$Mouse$Hover, topicId, boxPath)
-            )
-          )
-        ),
-        A2(
-          $elm$html$Html$Events$on,
-          "pointerleave",
-          $elm$json$Json$Decode$succeed(
-            $author$project$Model$Mouse(
-              A2($author$project$Feature$Mouse$Unhover, topicId, boxPath)
-            )
-          )
-        )
-      ]
-    );
-  }
-);
 var $author$project$Map$labelTopic = F4(
   function(topic, props, boxPath, model2) {
     return _Utils_Tuple2(
@@ -37822,7 +37911,7 @@ var $author$project$Map$viewAssocDraft = F2(
           $author$project$Box$firstId(boxPath),
           boxId
         ),
-        A2($author$project$Box$byIdOrLog, model2.boxId, model2)
+        $author$project$Box$fullscreen(model2)
       );
       if (_v2.a && _v2.b.$ === "Just") {
         var box = _v2.b.a;
@@ -38529,11 +38618,19 @@ var $author$project$Feature$ToolAPI$viewToolbar = F2(
     }
   }
 );
+var $author$project$Feature$MouseAPI$isDragInProgress = function(model2) {
+  var _v0 = model2.mouse.dragState;
+  if (_v0.$ === "Drag") {
+    return true;
+  } else {
+    return false;
+  }
+};
 var $author$project$Feature$MouseAPI$isHovered = F3(
   function(itemId, boxId, model2) {
-    var _v0 = model2.mouse.dragState;
-    if (_v0.$ === "NoDrag" && _v0.a.$ === "Just" && _v0.a.a.b.b) {
-      var _v1 = _v0.a.a;
+    var _v0 = model2.mouse.hover;
+    if (_v0.$ === "Just" && _v0.a.b.b) {
+      var _v1 = _v0.a;
       var itemId_ = _v1.a;
       var _v2 = _v1.b;
       var boxId_ = _v2.a;
@@ -38614,9 +38711,10 @@ var $author$project$Feature$ToolAPI$viewCaret = F3(
 var $author$project$Feature$ToolAPI$viewTopicTools = F3(
   function(topicId, boxPath, model2) {
     var isEdit = A3($author$project$Feature$TextAPI$isEdit, topicId, boxPath, model2);
+    var isDrag = $author$project$Feature$MouseAPI$isDragInProgress(model2);
     var boxId = $author$project$Box$firstId(boxPath);
     var isHovered = A3($author$project$Feature$MouseAPI$isHovered, topicId, boxId, model2);
-    return isHovered && !isEdit ? _List_fromArray(
+    return isHovered && (!isDrag && !isEdit) ? _List_fromArray(
       [
         A3($author$project$Feature$ToolAPI$viewCaret, topicId, boxId, model2)
       ]
@@ -38807,13 +38905,10 @@ var $author$project$Map$viewTopic = F4(
       _Utils_ap(
         A2($author$project$Map$topicAttr, topic.id, boxPath),
         _Utils_ap(
-          A2($author$project$Feature$MouseAPI$hoverHandler, topic.id, boxPath),
+          A2($author$project$Feature$MouseAPI$topicDownHandler, topic.id, boxPath),
           _Utils_ap(
-            A2($author$project$Feature$MouseAPI$topicDownHandler, topic.id, boxPath),
-            _Utils_ap(
-              A3($author$project$Map$topicStyle, topic.id, boxId, model2),
-              style
-            )
+            A3($author$project$Map$topicStyle, topic.id, boxId, model2),
+            style
           )
         )
       ),
@@ -38845,7 +38940,7 @@ var $author$project$Map$whiteBoxTopic = F4(
     );
   }
 );
-var $author$project$Config$date = "Jan 14, 2026";
+var $author$project$Config$date = "Jan 15, 2026";
 var $author$project$Config$footerFontSize = 13;
 var $author$project$Main$footerStyle = _List_fromArray(
   [
@@ -39583,7 +39678,7 @@ const Elm = { "Main": { "init": $author$project$Main$main(
     },
     A2($elm$json$Json$Decode$index, 0, $elm$json$Json$Decode$value)
   )
-)({ "versions": { "elm": "0.19.1" }, "types": { "message": "Model.Msg", "aliases": { "ModelParts.BoxId": { "args": [], "type": "ModelParts.Id" }, "ModelParts.BoxPath": { "args": [], "type": "List.List ModelParts.BoxId" }, "ModelParts.Id": { "args": [], "type": "Basics.Int" }, "ModelParts.ImageId": { "args": [], "type": "Basics.Int" }, "ModelParts.Point": { "args": [], "type": "{ x : Basics.Int, y : Basics.Int }" }, "ModelParts.Icon": { "args": [], "type": "String.String" }, "ModelParts.Size": { "args": [], "type": "{ w : Basics.Int, h : Basics.Int }" } }, "unions": { "Model.Msg": { "args": [], "tags": { "AddAssoc": ["ModelParts.Id", "ModelParts.Id", "ModelParts.BoxId"], "MoveTopicToBox": ["ModelParts.Id", "ModelParts.BoxId", "ModelParts.Point", "ModelParts.Id", "ModelParts.BoxPath", "ModelParts.Point"], "TopicDragged": [], "ItemClicked": ["ModelParts.Id", "ModelParts.BoxPath"], "Cancel": ["Maybe.Maybe ( ModelParts.Id, ModelParts.BoxPath )"], "Tool": ["Feature.Tool.Msg"], "Text": ["Feature.Text.Msg"], "Mouse": ["Feature.Mouse.Msg"], "Search": ["Feature.Search.Msg"], "Icon": ["Feature.Icon.Msg"], "Nav": ["Feature.Nav.Msg"], "Scrolled": ["ModelParts.Point"], "UrlResolved": ["( ModelParts.ImageId, String.String )"], "NoOp": [] } }, "Basics.Int": { "args": [], "tags": { "Int": [] } }, "List.List": { "args": ["a"], "tags": {} }, "Maybe.Maybe": { "args": ["a"], "tags": { "Just": ["a"], "Nothing": [] } }, "Feature.Icon.Msg": { "args": [], "tags": { "IconSelected": ["Maybe.Maybe ModelParts.Icon"] } }, "Feature.Mouse.Msg": { "args": [], "tags": { "Down": [], "DownOnTopic": ["ModelParts.Id", "ModelParts.BoxPath", "ModelParts.Point"], "Move": ["ModelParts.Point"], "Up": [], "Hover": ["ModelParts.Id", "ModelParts.BoxPath"], "Unhover": ["ModelParts.Id", "ModelParts.BoxPath"], "Time": ["Time.Posix"], "AssocClicked": ["ModelParts.Id", "ModelParts.BoxPath"] } }, "Feature.Nav.Msg": { "args": [], "tags": { "HashChanged": ["String.String"] } }, "Feature.Search.Msg": { "args": [], "tags": { "Input": ["String.String"], "InputFocused": [], "TopicHovered": ["ModelParts.Id"], "TopicUnhovered": ["ModelParts.Id"], "TopicClicked": ["ModelParts.Id"], "RelTopicHovered": ["( ModelParts.Id, ModelParts.Id )"], "RelTopicUnhovered": ["( ModelParts.Id, ModelParts.Id )"], "RelTopicClicked": ["( ModelParts.Id, ModelParts.Id )"], "Fullscreen": ["ModelParts.BoxId"] } }, "Feature.Text.Msg": { "args": [], "tags": { "OnTextInput": ["String.String"], "OnTextareaInput": ["String.String"], "GotTextSize": ["ModelParts.Id", "ModelParts.SizeField", "ModelParts.Size"], "LeaveEdit": [], "ImageFilePicked": ["( ModelParts.Id, ModelParts.ImageId )"] } }, "Feature.Tool.Msg": { "args": [], "tags": { "Home": [], "Menu": [], "Set": ["Feature.Tool.LineStyle"], "Import": [], "Export": [], "AddTopic": [], "AddBox": [], "Undo": [], "Redo": [], "Edit": [], "Icon": [], "Traverse": [], "Delete": [], "Remove": [], "Fullscreen": ["ModelParts.BoxId"], "Unbox": ["ModelParts.BoxId", "ModelParts.BoxId"], "ToggleDisplay": ["ModelParts.Id", "ModelParts.BoxId"], "Image": ["ModelParts.Id"], "LeaveEdit": [] } }, "String.String": { "args": [], "tags": { "String": [] } }, "Feature.Tool.LineStyle": { "args": [], "tags": { "Cornered": [], "Straight": [] } }, "Time.Posix": { "args": [], "tags": { "Posix": ["Basics.Int"] } }, "ModelParts.SizeField": { "args": [], "tags": { "View": [], "Editor": [] } } } } }) } };
+)({ "versions": { "elm": "0.19.1" }, "types": { "message": "Model.Msg", "aliases": { "ModelParts.BoxId": { "args": [], "type": "ModelParts.Id" }, "ModelParts.BoxPath": { "args": [], "type": "List.List ModelParts.BoxId" }, "ModelParts.Id": { "args": [], "type": "Basics.Int" }, "ModelParts.ImageId": { "args": [], "type": "Basics.Int" }, "ModelParts.Point": { "args": [], "type": "{ x : Basics.Int, y : Basics.Int }" }, "ModelParts.Icon": { "args": [], "type": "String.String" }, "ModelParts.Size": { "args": [], "type": "{ w : Basics.Int, h : Basics.Int }" } }, "unions": { "Model.Msg": { "args": [], "tags": { "AddAssoc": ["ModelParts.Id", "ModelParts.Id", "ModelParts.BoxId"], "MoveTopicToBox": ["ModelParts.Id", "ModelParts.BoxId", "ModelParts.Point", "ModelParts.Id", "ModelParts.BoxPath", "ModelParts.Point"], "TopicDragged": [], "ItemClicked": ["ModelParts.Id", "ModelParts.BoxPath"], "Cancel": ["Maybe.Maybe ( ModelParts.Id, ModelParts.BoxPath )"], "Tool": ["Feature.Tool.Msg"], "Text": ["Feature.Text.Msg"], "Mouse": ["Feature.Mouse.Msg"], "Search": ["Feature.Search.Msg"], "Icon": ["Feature.Icon.Msg"], "Nav": ["Feature.Nav.Msg"], "Scrolled": ["ModelParts.Point"], "UrlResolved": ["( ModelParts.ImageId, String.String )"], "NoOp": [] } }, "Basics.Int": { "args": [], "tags": { "Int": [] } }, "List.List": { "args": ["a"], "tags": {} }, "Maybe.Maybe": { "args": ["a"], "tags": { "Just": ["a"], "Nothing": [] } }, "Feature.Icon.Msg": { "args": [], "tags": { "IconSelected": ["Maybe.Maybe ModelParts.Icon"] } }, "Feature.Mouse.Msg": { "args": [], "tags": { "Down": [], "DownOnTopic": ["ModelParts.Id", "ModelParts.BoxPath", "ModelParts.Point"], "Move": ["ModelParts.Point"], "Up": [], "Time": ["Time.Posix"], "AssocClicked": ["ModelParts.Id", "ModelParts.BoxPath"] } }, "Feature.Nav.Msg": { "args": [], "tags": { "HashChanged": ["String.String"] } }, "Feature.Search.Msg": { "args": [], "tags": { "Input": ["String.String"], "InputFocused": [], "TopicHovered": ["ModelParts.Id"], "TopicUnhovered": ["ModelParts.Id"], "TopicClicked": ["ModelParts.Id"], "RelTopicHovered": ["( ModelParts.Id, ModelParts.Id )"], "RelTopicUnhovered": ["( ModelParts.Id, ModelParts.Id )"], "RelTopicClicked": ["( ModelParts.Id, ModelParts.Id )"], "Fullscreen": ["ModelParts.BoxId"] } }, "Feature.Text.Msg": { "args": [], "tags": { "OnTextInput": ["String.String"], "OnTextareaInput": ["String.String"], "GotTextSize": ["ModelParts.Id", "ModelParts.SizeField", "ModelParts.Size"], "LeaveEdit": [], "ImageFilePicked": ["( ModelParts.Id, ModelParts.ImageId )"] } }, "Feature.Tool.Msg": { "args": [], "tags": { "Home": [], "Menu": [], "Set": ["Feature.Tool.LineStyle"], "Import": [], "Export": [], "AddTopic": [], "AddBox": [], "Undo": [], "Redo": [], "Edit": [], "Icon": [], "Traverse": [], "Delete": [], "Remove": [], "Fullscreen": ["ModelParts.BoxId"], "Unbox": ["ModelParts.BoxId", "ModelParts.BoxId"], "ToggleDisplay": ["ModelParts.Id", "ModelParts.BoxId"], "Image": ["ModelParts.Id"], "LeaveEdit": [] } }, "String.String": { "args": [], "tags": { "String": [] } }, "Feature.Tool.LineStyle": { "args": [], "tags": { "Cornered": [], "Straight": [] } }, "Time.Posix": { "args": [], "tags": { "Posix": ["Basics.Int"] } }, "ModelParts.SizeField": { "args": [], "tags": { "View": [], "Editor": [] } } } } }) } };
 var ch2 = {};
 var wk = (function(c, id, msg, transfer, cb) {
   var w = new Worker(ch2[id] || (ch2[id] = URL.createObjectURL(new Blob([
