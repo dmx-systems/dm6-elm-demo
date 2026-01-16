@@ -11403,7 +11403,7 @@ var $author$project$Feature$TextAPI$leaveEdit = function(model2) {
     return _Utils_Tuple2(model2, $elm$core$Platform$Cmd$none);
   }
 };
-var $author$project$Main$cancelUIWith_ = F2(
+var $author$project$Main$cancelUIWith = F2(
   function(maybeTarget, model2) {
     var isTargetSelected = (function() {
       if (maybeTarget.$ === "Just") {
@@ -11425,6 +11425,24 @@ var $author$project$Main$cancelUIWith_ = F2(
     );
   }
 );
+var $author$project$Feature$MouseAPI$setHover = F2(
+  function(hover, model2) {
+    var mouse = model2.mouse;
+    return _Utils_update(
+      model2,
+      {
+        mouse: _Utils_update(
+          mouse,
+          { hover }
+        )
+      }
+    );
+  }
+);
+var $author$project$Feature$MouseAPI$clearHover = function(model2) {
+  A2($author$project$Utils$info, "clearHover", "<--");
+  return A2($author$project$Feature$MouseAPI$setHover, $elm$core$Maybe$Nothing, model2);
+};
 var $author$project$Feature$SearchAPI$setResult = F2(
   function(result, model2) {
     var search = model2.search;
@@ -11474,11 +11492,13 @@ var $author$project$Feature$IconAPI$closePicker = function(model2) {
 var $author$project$Main$cancelUI = F2(
   function(maybeTarget, model2) {
     return A2(
-      $author$project$Main$cancelUIWith_,
+      $author$project$Main$cancelUIWith,
       maybeTarget,
-      $author$project$Feature$ToolAPI$closeMenu(
-        $author$project$Feature$SearchAPI$closeMenu(
-          $author$project$Feature$IconAPI$closePicker(model2)
+      $author$project$Feature$MouseAPI$clearHover(
+        $author$project$Feature$ToolAPI$closeMenu(
+          $author$project$Feature$SearchAPI$closeMenu(
+            $author$project$Feature$IconAPI$closePicker(model2)
+          )
         )
       )
     );
@@ -12297,6 +12317,22 @@ var $author$project$Feature$Mouse$WaitForStartTime = F3(
     return { $: "WaitForStartTime", a, b, c };
   }
 );
+var $author$project$Feature$MouseAPI$emulateHover = F4(
+  function(topicId, boxPath, pointerType, model2) {
+    var _v0 = pointerType === "touch";
+    if (_v0) {
+      return A2(
+        $author$project$Feature$MouseAPI$setHover,
+        $elm$core$Maybe$Just(
+          _Utils_Tuple2(topicId, boxPath)
+        ),
+        model2
+      );
+    } else {
+      return model2;
+    }
+  }
+);
 F2(
   function(a, b) {
     return { $: "Zone", a, b };
@@ -12321,13 +12357,13 @@ var $author$project$Feature$MouseAPI$setDragState = F2(
     );
   }
 );
-var $author$project$Feature$MouseAPI$mouseDownOnTopic = F4(
-  function(topicId, boxPath, pos, model2) {
+var $author$project$Feature$MouseAPI$mouseDownOnTopic = F5(
+  function(topicId, boxPath, pos, pointerType, model2) {
     return _Utils_Tuple2(
       A2(
         $author$project$Feature$MouseAPI$setDragState,
         A3($author$project$Feature$Mouse$WaitForStartTime, topicId, boxPath, pos),
-        model2
+        A4($author$project$Feature$MouseAPI$emulateHover, topicId, boxPath, pointerType, model2)
       ),
       $elm$core$Platform$Cmd$batch(
         _List_fromArray(
@@ -12380,20 +12416,6 @@ var $author$project$Box$hasDeepItem = F3(
         return false;
       }
     }
-  }
-);
-var $author$project$Feature$MouseAPI$setHover = F2(
-  function(hover, model2) {
-    var mouse = model2.mouse;
-    return _Utils_update(
-      model2,
-      {
-        mouse: _Utils_update(
-          mouse,
-          { hover }
-        )
-      }
-    );
   }
 );
 var $author$project$Feature$MouseAPI$enter = F2(
@@ -13041,14 +13063,17 @@ var $author$project$Feature$MouseAPI$update = F2(
       case "DownOnTopic":
         var id = msg.a;
         var boxPath = msg.b;
-        var pos = msg.c;
+        var _v1 = msg.c;
+        var pos = _v1.a;
+        var pointerType = _v1.b;
         return A2(
           $author$project$Undo$swap,
           undoModel,
-          A4($author$project$Feature$MouseAPI$mouseDownOnTopic, id, boxPath, pos, present)
+          A5($author$project$Feature$MouseAPI$mouseDownOnTopic, id, boxPath, pos, pointerType, present)
         );
       case "Move":
-        var pos = msg.a;
+        var _v2 = msg.a;
+        var pos = _v2.a;
         return A2(
           $author$project$Undo$swap,
           undoModel,
@@ -14748,7 +14773,13 @@ var $author$project$Main$updateScrollPos = F2(
 var $author$project$Main$update = F2(
   function(msg, undoModel) {
     var present = undoModel.present;
-    A2($author$project$Utils$info, "update", msg);
+    (function() {
+      if (msg.$ === "Mouse" && msg.a.$ === "Move") {
+        return msg;
+      } else {
+        return A2($author$project$Utils$info, "update", msg);
+      }
+    })();
     switch (msg.$) {
       case "AddAssoc":
         var player1 = msg.a;
@@ -14858,24 +14889,29 @@ var $author$project$Feature$Mouse$Move = function(a) {
   return { $: "Move", a };
 };
 var $author$project$Feature$Mouse$Up = { $: "Up" };
-var $author$project$Utils$toIntDecoder = function(_float) {
-  return $elm$json$Json$Decode$succeed(
-    $elm$core$Basics$round(_float)
-  );
-};
+var $elm$core$Tuple$pair = F2(
+  function(a, b) {
+    return _Utils_Tuple2(a, b);
+  }
+);
 var $author$project$Utils$pointDecoder = A3(
   $elm$json$Json$Decode$map2,
-  $author$project$ModelParts$Point,
-  A2(
-    $elm$json$Json$Decode$andThen,
-    $author$project$Utils$toIntDecoder,
-    A2($elm$json$Json$Decode$field, "clientX", $elm$json$Json$Decode$float)
+  $elm$core$Tuple$pair,
+  A3(
+    $elm$json$Json$Decode$map2,
+    $author$project$ModelParts$Point,
+    A2(
+      $elm$json$Json$Decode$map,
+      $elm$core$Basics$round,
+      A2($elm$json$Json$Decode$field, "clientX", $elm$json$Json$Decode$float)
+    ),
+    A2(
+      $elm$json$Json$Decode$map,
+      $elm$core$Basics$round,
+      A2($elm$json$Json$Decode$field, "clientY", $elm$json$Json$Decode$float)
+    )
   ),
-  A2(
-    $elm$json$Json$Decode$andThen,
-    $author$project$Utils$toIntDecoder,
-    A2($elm$json$Json$Decode$field, "clientY", $elm$json$Json$Decode$float)
-  )
+  A2($elm$json$Json$Decode$field, "pointerType", $elm$json$Json$Decode$string)
 );
 var $author$project$Feature$MouseAPI$dragHandler = _List_fromArray(
   [
@@ -36344,11 +36380,6 @@ var $dillonkearns$elm_markdown$Markdown$Block$extractTextHelp = F2(
     }
   }
 );
-var $elm$core$Tuple$pair = F2(
-  function(a, b) {
-    return _Utils_Tuple2(a, b);
-  }
-);
 var $dillonkearns$elm_markdown$Markdown$Renderer$renderHtml = F5(
   function(tagName, attributes, children, _v0, renderedChildren) {
     var htmlRenderer = _v0.a;
@@ -38940,7 +38971,7 @@ var $author$project$Map$whiteBoxTopic = F4(
     );
   }
 );
-var $author$project$Config$date = "Jan 15, 2026";
+var $author$project$Config$date = "Jan 16, 2026";
 var $author$project$Config$footerFontSize = 13;
 var $author$project$Main$footerStyle = _List_fromArray(
   [
@@ -39678,7 +39709,7 @@ const Elm = { "Main": { "init": $author$project$Main$main(
     },
     A2($elm$json$Json$Decode$index, 0, $elm$json$Json$Decode$value)
   )
-)({ "versions": { "elm": "0.19.1" }, "types": { "message": "Model.Msg", "aliases": { "ModelParts.BoxId": { "args": [], "type": "ModelParts.Id" }, "ModelParts.BoxPath": { "args": [], "type": "List.List ModelParts.BoxId" }, "ModelParts.Id": { "args": [], "type": "Basics.Int" }, "ModelParts.ImageId": { "args": [], "type": "Basics.Int" }, "ModelParts.Point": { "args": [], "type": "{ x : Basics.Int, y : Basics.Int }" }, "ModelParts.Icon": { "args": [], "type": "String.String" }, "ModelParts.Size": { "args": [], "type": "{ w : Basics.Int, h : Basics.Int }" } }, "unions": { "Model.Msg": { "args": [], "tags": { "AddAssoc": ["ModelParts.Id", "ModelParts.Id", "ModelParts.BoxId"], "MoveTopicToBox": ["ModelParts.Id", "ModelParts.BoxId", "ModelParts.Point", "ModelParts.Id", "ModelParts.BoxPath", "ModelParts.Point"], "TopicDragged": [], "ItemClicked": ["ModelParts.Id", "ModelParts.BoxPath"], "Cancel": ["Maybe.Maybe ( ModelParts.Id, ModelParts.BoxPath )"], "Tool": ["Feature.Tool.Msg"], "Text": ["Feature.Text.Msg"], "Mouse": ["Feature.Mouse.Msg"], "Search": ["Feature.Search.Msg"], "Icon": ["Feature.Icon.Msg"], "Nav": ["Feature.Nav.Msg"], "Scrolled": ["ModelParts.Point"], "UrlResolved": ["( ModelParts.ImageId, String.String )"], "NoOp": [] } }, "Basics.Int": { "args": [], "tags": { "Int": [] } }, "List.List": { "args": ["a"], "tags": {} }, "Maybe.Maybe": { "args": ["a"], "tags": { "Just": ["a"], "Nothing": [] } }, "Feature.Icon.Msg": { "args": [], "tags": { "IconSelected": ["Maybe.Maybe ModelParts.Icon"] } }, "Feature.Mouse.Msg": { "args": [], "tags": { "Down": [], "DownOnTopic": ["ModelParts.Id", "ModelParts.BoxPath", "ModelParts.Point"], "Move": ["ModelParts.Point"], "Up": [], "Time": ["Time.Posix"], "AssocClicked": ["ModelParts.Id", "ModelParts.BoxPath"] } }, "Feature.Nav.Msg": { "args": [], "tags": { "HashChanged": ["String.String"] } }, "Feature.Search.Msg": { "args": [], "tags": { "Input": ["String.String"], "InputFocused": [], "TopicHovered": ["ModelParts.Id"], "TopicUnhovered": ["ModelParts.Id"], "TopicClicked": ["ModelParts.Id"], "RelTopicHovered": ["( ModelParts.Id, ModelParts.Id )"], "RelTopicUnhovered": ["( ModelParts.Id, ModelParts.Id )"], "RelTopicClicked": ["( ModelParts.Id, ModelParts.Id )"], "Fullscreen": ["ModelParts.BoxId"] } }, "Feature.Text.Msg": { "args": [], "tags": { "OnTextInput": ["String.String"], "OnTextareaInput": ["String.String"], "GotTextSize": ["ModelParts.Id", "ModelParts.SizeField", "ModelParts.Size"], "LeaveEdit": [], "ImageFilePicked": ["( ModelParts.Id, ModelParts.ImageId )"] } }, "Feature.Tool.Msg": { "args": [], "tags": { "Home": [], "Menu": [], "Set": ["Feature.Tool.LineStyle"], "Import": [], "Export": [], "AddTopic": [], "AddBox": [], "Undo": [], "Redo": [], "Edit": [], "Icon": [], "Traverse": [], "Delete": [], "Remove": [], "Fullscreen": ["ModelParts.BoxId"], "Unbox": ["ModelParts.BoxId", "ModelParts.BoxId"], "ToggleDisplay": ["ModelParts.Id", "ModelParts.BoxId"], "Image": ["ModelParts.Id"], "LeaveEdit": [] } }, "String.String": { "args": [], "tags": { "String": [] } }, "Feature.Tool.LineStyle": { "args": [], "tags": { "Cornered": [], "Straight": [] } }, "Time.Posix": { "args": [], "tags": { "Posix": ["Basics.Int"] } }, "ModelParts.SizeField": { "args": [], "tags": { "View": [], "Editor": [] } } } } }) } };
+)({ "versions": { "elm": "0.19.1" }, "types": { "message": "Model.Msg", "aliases": { "ModelParts.BoxId": { "args": [], "type": "ModelParts.Id" }, "ModelParts.BoxPath": { "args": [], "type": "List.List ModelParts.BoxId" }, "ModelParts.Id": { "args": [], "type": "Basics.Int" }, "ModelParts.ImageId": { "args": [], "type": "Basics.Int" }, "ModelParts.Point": { "args": [], "type": "{ x : Basics.Int, y : Basics.Int }" }, "ModelParts.Icon": { "args": [], "type": "String.String" }, "ModelParts.PointerType": { "args": [], "type": "String.String" }, "ModelParts.Size": { "args": [], "type": "{ w : Basics.Int, h : Basics.Int }" } }, "unions": { "Model.Msg": { "args": [], "tags": { "AddAssoc": ["ModelParts.Id", "ModelParts.Id", "ModelParts.BoxId"], "MoveTopicToBox": ["ModelParts.Id", "ModelParts.BoxId", "ModelParts.Point", "ModelParts.Id", "ModelParts.BoxPath", "ModelParts.Point"], "TopicDragged": [], "ItemClicked": ["ModelParts.Id", "ModelParts.BoxPath"], "Cancel": ["Maybe.Maybe ( ModelParts.Id, ModelParts.BoxPath )"], "Tool": ["Feature.Tool.Msg"], "Text": ["Feature.Text.Msg"], "Mouse": ["Feature.Mouse.Msg"], "Search": ["Feature.Search.Msg"], "Icon": ["Feature.Icon.Msg"], "Nav": ["Feature.Nav.Msg"], "Scrolled": ["ModelParts.Point"], "UrlResolved": ["( ModelParts.ImageId, String.String )"], "NoOp": [] } }, "Basics.Int": { "args": [], "tags": { "Int": [] } }, "List.List": { "args": ["a"], "tags": {} }, "Maybe.Maybe": { "args": ["a"], "tags": { "Just": ["a"], "Nothing": [] } }, "Feature.Icon.Msg": { "args": [], "tags": { "IconSelected": ["Maybe.Maybe ModelParts.Icon"] } }, "Feature.Mouse.Msg": { "args": [], "tags": { "Down": [], "DownOnTopic": ["ModelParts.Id", "ModelParts.BoxPath", "( ModelParts.Point, ModelParts.PointerType )"], "Move": ["( ModelParts.Point, ModelParts.PointerType )"], "Up": [], "Time": ["Time.Posix"], "AssocClicked": ["ModelParts.Id", "ModelParts.BoxPath"] } }, "Feature.Nav.Msg": { "args": [], "tags": { "HashChanged": ["String.String"] } }, "Feature.Search.Msg": { "args": [], "tags": { "Input": ["String.String"], "InputFocused": [], "TopicHovered": ["ModelParts.Id"], "TopicUnhovered": ["ModelParts.Id"], "TopicClicked": ["ModelParts.Id"], "RelTopicHovered": ["( ModelParts.Id, ModelParts.Id )"], "RelTopicUnhovered": ["( ModelParts.Id, ModelParts.Id )"], "RelTopicClicked": ["( ModelParts.Id, ModelParts.Id )"], "Fullscreen": ["ModelParts.BoxId"] } }, "Feature.Text.Msg": { "args": [], "tags": { "OnTextInput": ["String.String"], "OnTextareaInput": ["String.String"], "GotTextSize": ["ModelParts.Id", "ModelParts.SizeField", "ModelParts.Size"], "LeaveEdit": [], "ImageFilePicked": ["( ModelParts.Id, ModelParts.ImageId )"] } }, "Feature.Tool.Msg": { "args": [], "tags": { "Home": [], "Menu": [], "Set": ["Feature.Tool.LineStyle"], "Import": [], "Export": [], "AddTopic": [], "AddBox": [], "Undo": [], "Redo": [], "Edit": [], "Icon": [], "Traverse": [], "Delete": [], "Remove": [], "Fullscreen": ["ModelParts.BoxId"], "Unbox": ["ModelParts.BoxId", "ModelParts.BoxId"], "ToggleDisplay": ["ModelParts.Id", "ModelParts.BoxId"], "Image": ["ModelParts.Id"], "LeaveEdit": [] } }, "String.String": { "args": [], "tags": { "String": [] } }, "Feature.Tool.LineStyle": { "args": [], "tags": { "Cornered": [], "Straight": [] } }, "Time.Posix": { "args": [], "tags": { "Posix": ["Basics.Int"] } }, "ModelParts.SizeField": { "args": [], "tags": { "View": [], "Editor": [] } } } } }) } };
 var ch2 = {};
 var wk = (function(c, id, msg, transfer, cb) {
   var w = new Worker(ch2[id] || (ch2[id] = URL.createObjectURL(new Blob([
